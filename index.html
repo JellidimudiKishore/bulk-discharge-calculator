@@ -1,3 +1,4 @@
+html_code = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,6 +14,10 @@
       background: #f4f4f4;
       padding: 15px;
       border-radius: 8px;
+    }
+    button {
+      margin-right: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -33,10 +38,14 @@
   <label>Number of GSU's Used: <input type="number" id="gsuCount"></label><br><br>
   <label>Number of Loaders Used: <input type="number" id="loaderCount"></label><br><br>
   <button onclick="generateReport()">Generate Report</button>
+  <button onclick="saveToSpreadsheet()">Save to Spreadsheet</button>
+  <a id="whatsappShare" target="_blank"><button>Share on WhatsApp</button></a>
 
   <pre id="output" style="margin-top:20px;"></pre>
 
   <script>
+    let report = "";
+
     function generateReport() {
       const vessel = document.getElementById('vesselName').value;
       const cargo = document.getElementById('cargoType').value;
@@ -64,7 +73,7 @@
       const formattedStart = start.toLocaleString();
       const formattedEnd = end.toLocaleString();
 
-      const report = 
+      report = 
 `MV ${vessel} (DR PLT: ${quantity.toLocaleString()} mt)
 Vsl Comm: ${formattedStart}
 Vsl Comp: ${formattedEnd}
@@ -76,7 +85,63 @@ Number of GSU: ${gsu}
 Number of loaders: ${loaders}`;
 
       document.getElementById('output').textContent = report;
+
+      // Update WhatsApp share link
+      document.getElementById('whatsappShare').href =
+        "https://wa.me/?text=" + encodeURIComponent(report);
+    }
+
+    function saveToSpreadsheet() {
+      const vessel = document.getElementById('vesselName').value;
+      const cargo = document.getElementById('cargoType').value;
+      const quantity = parseFloat(document.getElementById('quantity').value);
+      const start = document.getElementById('startTime').value;
+      const end = document.getElementById('endTime').value;
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const totalMs = endDate - startDate;
+      const totalHours = totalMs / (1000 * 60 * 60);
+      const totalDays = totalHours / 24;
+
+      const dischargeRate = quantity / totalHours;
+      const grossProductivity = quantity / totalDays;
+      const grossHours = Math.floor(totalHours) + " hrs " + Math.round((totalHours % 1) * 60) + " min";
+
+      const data = {
+        vessel: vessel,
+        cargo: cargo,
+        quantity: quantity,
+        startTime: start,
+        endTime: end,
+        dischargeRate: dischargeRate.toFixed(2),
+        grossDays: totalDays.toFixed(6),
+        grossHours: grossHours,
+        grossProductivity: grossProductivity.toFixed(2)
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycby_-edXP1jfmdSAo_aJEwZQTLA9Cb6FwpHt6Dy7jH05vvBGU5UBV0NCbZRn6VR31nQx/exec", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(response => response.text())
+      .then(result => {
+        alert("✅ Report saved to spreadsheet: " + result);
+      })
+      .catch(error => {
+        alert("❌ Error saving to spreadsheet: " + error);
+      });
     }
   </script>
 </body>
 </html>
+"""
+
+with open("bulk_discharge_calculator.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
+
+print("HTML file with spreadsheet and WhatsApp integration has been created: bulk_discharge_calculator.html")
+
