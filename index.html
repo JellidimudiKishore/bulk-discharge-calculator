@@ -1,4 +1,3 @@
-html_code = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,7 +16,6 @@ html_code = """
     }
     button {
       margin-right: 10px;
-      margin-top: 10px;
     }
   </style>
 </head>
@@ -86,7 +84,6 @@ Number of loaders: ${loaders}`;
 
       document.getElementById('output').textContent = report;
 
-      // Update WhatsApp share link
       document.getElementById('whatsappShare').href =
         "https://wa.me/?text=" + encodeURIComponent(report);
     }
@@ -98,20 +95,21 @@ Number of loaders: ${loaders}`;
       const start = document.getElementById('startTime').value;
       const end = document.getElementById('endTime').value;
 
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      const totalMs = endDate - startDate;
+      const totalMs = new Date(end) - new Date(start);
       const totalHours = totalMs / (1000 * 60 * 60);
       const totalDays = totalHours / 24;
 
       const dischargeRate = quantity / totalHours;
       const grossProductivity = quantity / totalDays;
-      const grossHours = Math.floor(totalHours) + " hrs " + Math.round((totalHours % 1) * 60) + " min";
 
-      const data = {
-        vessel: vessel,
-        cargo: cargo,
-        quantity: quantity,
+      const hours = Math.floor(totalHours);
+      const minutes = Math.round((totalHours - hours) * 60);
+      const grossHours = `${hours} hrs ${minutes} min`;
+
+      const payload = {
+        vessel,
+        cargo,
+        quantity,
         startTime: start,
         endTime: end,
         dischargeRate: dischargeRate.toFixed(2),
@@ -120,28 +118,17 @@ Number of loaders: ${loaders}`;
         grossProductivity: grossProductivity.toFixed(2)
       };
 
-      fetch("https://script.google.com/macros/s/AKfycby_-edXP1jfmdSAo_aJEwZQTLA9Cb6FwpHt6Dy7jH05vvBGU5UBV0NCbZRn6VR31nQx/exec", {
+      fetch("YOUR_WEB_APP_URL_HERE", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
         headers: {
           "Content-Type": "application/json"
         }
       })
-      .then(response => response.text())
-      .then(result => {
-        alert("✅ Report saved to spreadsheet: " + result);
-      })
-      .catch(error => {
-        alert("❌ Error saving to spreadsheet: " + error);
-      });
+      .then(res => res.text())
+      .then(data => alert("✅ Report saved to spreadsheet."))
+      .catch(err => alert("❌ Failed to save report: " + err));
     }
   </script>
 </body>
 </html>
-"""
-
-with open("bulk_discharge_calculator.html", "w", encoding="utf-8") as f:
-    f.write(html_code)
-
-print("HTML file with spreadsheet and WhatsApp integration has been created: bulk_discharge_calculator.html")
-
