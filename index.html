@@ -1,134 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bulk Cargo Discharge Summary</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: auto;
-      padding: 20px;
-    }
-    pre {
-      background: #f4f4f4;
-      padding: 15px;
-      border-radius: 8px;
-    }
-    button {
-      margin-right: 10px;
-    }
-  </style>
+  <title>Test POST to Google Apps Script</title>
 </head>
 <body>
-  <h3>Bulk Cargo Discharge Summary</h3>
-  <label>Vessel Name: <input type="text" id="vesselName"></label><br><br>
-  <label>Cargo Type:
-    <select id="cargoType">
-      <option value="IOP">IOP</option>
-      <option value="Coal">Coal</option>
-      <option value="Flux">Flux</option>
-      <option value="Coke">Coke</option>
-    </select>
-  </label><br><br>
-  <label>Total Bulk Quantity (MT): <input type="number" id="quantity"></label><br><br>
-  <label>Work Commenced at Berth: <input type="datetime-local" id="startTime"></label><br><br>
-  <label>Work Completed at Berth: <input type="datetime-local" id="endTime"></label><br><br>
-  <label>Number of GSU's Used: <input type="number" id="gsuCount"></label><br><br>
-  <label>Number of Loaders Used: <input type="number" id="loaderCount"></label><br><br>
-  <button onclick="generateReport()">Generate Report</button>
-  <button onclick="saveToSpreadsheet()">Save to Spreadsheet</button>
-  <a id="whatsappShare" target="_blank"><button>Share on WhatsApp</button></a>
-
-  <pre id="output" style="margin-top:20px;"></pre>
+  <h2>Test Save to Spreadsheet</h2>
+  <form id="testForm">
+    <label>Vessel Name: <input type="text" name="vessel" value="Test Vessel"></label><br><br>
+    <label>Cargo Type: <input type="text" name="cargo" value="Coal"></label><br><br>
+    <label>Total Quantity: <input type="number" name="quantity" value="10000"></label><br><br>
+    <label>Start Time: <input type="datetime-local" name="startTime"></label><br><br>
+    <label>End Time: <input type="datetime-local" name="endTime"></label><br><br>
+    <label>Discharge Rate: <input type="text" name="dischargeRate" value="500"></label><br><br>
+    <label>Gross Days: <input type="text" name="grossDays" value="0.83"></label><br><br>
+    <label>Gross Hours: <input type="text" name="grossHours" value="20 hrs 0 min"></label><br><br>
+    <label>Gross Productivity: <input type="text" name="grossProductivity" value="12000"></label><br><br>
+    <button type="submit">Send Test Data</button>
+  </form>
 
   <script>
-    let report = "";
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+      e.preventDefault();
 
-    function generateReport() {
-      const vessel = document.getElementById('vesselName').value;
-      const cargo = document.getElementById('cargoType').value;
-      const quantity = parseFloat(document.getElementById('quantity').value);
-      const start = new Date(document.getElementById('startTime').value);
-      const end = new Date(document.getElementById('endTime').value);
-      const gsu = document.getElementById('gsuCount').value;
-      const loaders = document.getElementById('loaderCount').value;
+      const formData = new FormData(e.target);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
 
-      if (!vessel || isNaN(quantity) || isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
-        document.getElementById('output').textContent = "⚠️ Please fill all fields correctly and ensure end time is after start time.";
-        return;
-      }
-
-      const totalMs = end - start;
-      const totalHours = totalMs / (1000 * 60 * 60);
-      const totalDays = totalHours / 24;
-
-      const dischargeRate = quantity / totalHours;
-      const grossProductivity = quantity / totalDays;
-
-      const hours = Math.floor(totalHours);
-      const minutes = Math.round((totalHours - hours) * 60);
-
-      const formattedStart = start.toLocaleString();
-      const formattedEnd = end.toLocaleString();
-
-      report = 
-`MV ${vessel} (DR PLT: ${quantity.toLocaleString()} mt)
-Vsl Comm: ${formattedStart}
-Vsl Comp: ${formattedEnd}
-Dish rate: ${dischargeRate.toFixed(2)} Mt/hr
-Gross operation time in days: ${totalDays.toFixed(6)} days
-Gross operation time in hrs: ${hours} hrs ${minutes} min
-Gross productivity: ${grossProductivity.toFixed(2)} Mt/day
-Number of GSU: ${gsu}
-Number of loaders: ${loaders}`;
-
-      document.getElementById('output').textContent = report;
-
-      document.getElementById('whatsappShare').href =
-        "https://wa.me/?text=" + encodeURIComponent(report);
-    }
-
-    function saveToSpreadsheet() {
-      const vessel = document.getElementById('vesselName').value;
-      const cargo = document.getElementById('cargoType').value;
-      const quantity = parseFloat(document.getElementById('quantity').value);
-      const start = document.getElementById('startTime').value;
-      const end = document.getElementById('endTime').value;
-
-      const totalMs = new Date(end) - new Date(start);
-      const totalHours = totalMs / (1000 * 60 * 60);
-      const totalDays = totalHours / 24;
-
-      const dischargeRate = quantity / totalHours;
-      const grossProductivity = quantity / totalDays;
-
-      const hours = Math.floor(totalHours);
-      const minutes = Math.round((totalHours - hours) * 60);
-      const grossHours = `${hours} hrs ${minutes} min`;
-
-      const payload = {
-        vessel,
-        cargo,
-        quantity,
-        startTime: start,
-        endTime: end,
-        dischargeRate: dischargeRate.toFixed(2),
-        grossDays: totalDays.toFixed(6),
-        grossHours: grossHours,
-        grossProductivity: grossProductivity.toFixed(2)
-      };
-
-      fetch("YOUR_WEB_APP_URL_HERE", {
+      fetch("https://script.google.com/macros/s/AKfycby_-edXP1jfmdSAo_aJEwZQTLA9Cb6FwpHt6Dy7jH05vvBGU5UBV0NCbZRn6VR31nQx/exec", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json"
         }
       })
       .then(res => res.text())
-      .then(data => alert("✅ Report saved to spreadsheet."))
-      .catch(err => alert("❌ Failed to save report: " + err));
-    }
+      .then(response => alert("✅ Response: " + response))
+      .catch(error => alert("❌ Error: " + error));
+    });
   </script>
 </body>
 </html>
